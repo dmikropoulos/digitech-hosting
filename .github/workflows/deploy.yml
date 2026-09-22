@@ -7,7 +7,7 @@ on:
       - main
     # Τρέξε ΜΟΝΟ αν υπάρξει αλλαγή μέσα στον φάκελο του demo-menu
     paths:
-      - 'sites/demo-menu/**'
+      - 'sites/demo-menu/index.html'
 
 jobs:
   build-and-push:
