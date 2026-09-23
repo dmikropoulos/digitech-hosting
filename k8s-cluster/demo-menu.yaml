@@ -35,7 +35,8 @@ metadata:
   name: demo-menu-ingress
 spec:
   rules:
-  - http:
+  - host: 130.61.72.72.nip.io
+    http:
       paths:
       - path: /
         pathType: Prefix
