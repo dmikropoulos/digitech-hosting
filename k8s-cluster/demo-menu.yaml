@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: demo-menu
-        image: ghcr.io/dmikropoulos/digitech-hosting/demo-menu:latest
+        image: ghcr.io/dmikropoulos/digitech-hosting/sites/demo-menu:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
