@@ -35,3 +35,14 @@ jobs:
           push: true
           # ΕΔΩ βάζεις το username σου με μικρά γράμματα
           tags: ghcr.io/dmikropoulos/digitech-hosting/sites/demo-menu:latest
+          
+      - name: Setup Kubernetes context
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy to Oracle Cloud (K3s)
+        run: |
+          kubectl apply -f k8s-cluster/demo-menu.yaml
+          kubectl rollout restart deployment demo-menu

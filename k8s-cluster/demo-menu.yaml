@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-menu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-menu
+  template:
+    metadata:
+      labels:
+        app: demo-menu
+    spec:
+      containers:
+      - name: demo-menu
+        image: ghcr.io/dmikropoulos/digitech-hosting/demo-menu:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-menu-svc
+spec:
+  selector:
+    app: demo-menu
+  ports:
+    - port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-menu-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: demo-menu-svc
+            port:
+              number: 80
