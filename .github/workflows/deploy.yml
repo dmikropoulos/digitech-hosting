@@ -45,5 +45,5 @@ jobs:
 
       - name: Deploy to Oracle Cloud (K3s)
         run: |
-          kubectl apply -f k8s-cluster/demo-menu.yaml
-          kubectl rollout restart deployment demo-menu
+          kubectl apply -f k8s-cluster/demo-menu.yaml --insecure-skip-tls-verify
+          kubectl rollout restart deployment demo-menu --insecure-skip-tls-verify
