@@ -5,9 +5,10 @@ on:
   push:
     branches:
       - main
-    # Τρέξε ΜΟΝΟ αν υπάρξει αλλαγή μέσα στον φάκελο του demo-menu
     paths:
-      - 'sites/demo-menu/index.html'
+      - 'sites/demo-menu/**'
+      - 'k8s-cluster/**'
+      - '.github/workflows/**'
 
 jobs:
   build-and-push:
