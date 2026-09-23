@@ -40,7 +40,7 @@ jobs:
         with:
           context: sites/demo-menu/
           push: true
-          tags: ghcr.io/dmikropoulos/digitech-hosting/demo-menu:latest
+          tags: ghcr.io/dmikropoulos/digitech-hosting/sites/demo-menu:latest
           platforms: linux/arm64
             
       - name: Setup Kubernetes context
