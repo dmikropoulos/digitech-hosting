@@ -29,14 +29,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Χτίσιμο (Build) και Ανέβασμα (Push) του Docker Image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push for ARM
         uses: docker/build-push-action@v5
         with:
-          context: ./sites/demo-menu
+          context: sites/demo-menu/
           push: true
-          # ΕΔΩ βάζεις το username σου με μικρά γράμματα
-          tags: ghcr.io/dmikropoulos/digitech-hosting/sites/demo-menu:latest
-          
+          tags: ghcr.io/dmikropoulos/digitech-hosting/demo-menu:latest
+          platforms: linux/arm64
+            
       - name: Setup Kubernetes context
         run: |
           mkdir -p ~/.kube
