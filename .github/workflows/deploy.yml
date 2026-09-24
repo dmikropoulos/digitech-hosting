@@ -55,7 +55,7 @@ jobs:
             IMAGE="ghcr.io/dmikropoulos/digitech-hosting/$SITE_NAME:latest"
             docker buildx build --platform linux/arm64 -t $IMAGE --push "$SITE_DIR"
 
-            DOMAIN="${SITE_NAME}.130.61.72.72.nip.io"
+            DOMAIN="${SITE_NAME}-130.61.72.72.nip.io"
             
             # Φτιάχνει το αρχείο του Kubernetes γραμμή-γραμμή με απόλυτη ασφάλεια
             (
