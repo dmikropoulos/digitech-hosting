@@ -1,33 +1,18 @@
-name: Build and Push Demo Site
+name: Auto-Deploy All Sites
 
-# Πότε θα τρέχει αυτός ο αυτοματισμός;
 on:
   push:
     branches:
       - main
     paths:
-      - 'sites/demo-menu/**'
-      - 'k8s-cluster/**'
-      - '.github/workflows/**'
+      - 'sites/**'
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
-    # Δίνουμε τα απαραίτητα δικαιώματα για να ανεβάσει το image
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-      - name: Κατέβασμα του κώδικα
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Σύνδεση στο GitHub Container Registry (GHCR)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -35,21 +20,98 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push for ARM
-        uses: docker/build-push-action@v5
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          context: sites/demo-menu/
-          push: true
-          tags: ghcr.io/dmikropoulos/digitech-hosting/sites/demo-menu:latest
-          platforms: linux/arm64
-            
-      - name: Setup Kubernetes context
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Deploy to Oracle Cloud (K3s)
+      - name: Build, Generate YAML & Deploy
         run: |
-          kubectl apply -f k8s-cluster/demo-menu.yaml --insecure-skip-tls-verify
-          kubectl rollout restart deployment demo-menu --insecure-skip-tls-verify
+          for SITE_DIR in sites/*/; do
+            [ -d "$SITE_DIR" ] || continue
+            
+            SITE_NAME=$(basename "$SITE_DIR")
+            echo "🚀 Ξεκινάει η αυτόματη διαδικασία για το site: $SITE_NAME"
+
+            # Φτιάχνει το Dockerfile αν δεν υπάρχει
+            if [ ! -f "${SITE_DIR}Dockerfile" ]; then
+              echo "FROM nginx:alpine" > "${SITE_DIR}Dockerfile"
+              echo "COPY . /usr/share/nginx/html" >> "${SITE_DIR}Dockerfile"
+            fi
+
+            # Χτίζει την εικόνα για τον server
+            IMAGE="ghcr.io/dmikropoulos/digitech-hosting/$SITE_NAME:latest"
+            docker buildx build --platform linux/arm64 -t $IMAGE --push "$SITE_DIR"
+
+            DOMAIN="${SITE_NAME}.130.61.72.72.nip.io"
+            
+            # Φτιάχνει το αρχείο του Kubernetes γραμμή-γραμμή με απόλυτη ασφάλεια
+            (
+              echo "apiVersion: apps/v1"
+              echo "kind: Deployment"
+              echo "metadata:"
+              echo "  name: $SITE_NAME"
+              echo "spec:"
+              echo "  replicas: 1"
+              echo "  selector:"
+              echo "    matchLabels:"
+              echo "      app: $SITE_NAME"
+              echo "  template:"
+              echo "    metadata:"
+              echo "      labels:"
+              echo "        app: $SITE_NAME"
+              echo "    spec:"
+              echo "      containers:"
+              echo "      - name: $SITE_NAME"
+              echo "        image: $IMAGE"
+              echo "        imagePullPolicy: Always"
+              echo "        ports:"
+              echo "        - containerPort: 80"
+              echo "---"
+              echo "apiVersion: v1"
+              echo "kind: Service"
+              echo "metadata:"
+              echo "  name: ${SITE_NAME}-svc"
+              echo "spec:"
+              echo "  selector:"
+              echo "    app: $SITE_NAME"
+              echo "  ports:"
+              echo "  - port: 80"
+              echo "    targetPort: 80"
+              echo "---"
+              echo "apiVersion: networking.k8s.io/v1"
+              echo "kind: Ingress"
+              echo "metadata:"
+              echo "  name: ${SITE_NAME}-ingress"
+              echo "  annotations:"
+              echo "    cert-manager.io/cluster-issuer: letsencrypt-prod"
+              echo "spec:"
+              echo "  rules:"
+              echo "  - host: $DOMAIN"
+              echo "    http:"
+              echo "      paths:"
+              echo "      - path: /"
+              echo "        pathType: Prefix"
+              echo "        backend:"
+              echo "          service:"
+              echo "            name: ${SITE_NAME}-svc"
+              echo "            port:"
+              echo "              number: 80"
+              echo "  tls:"
+              echo "  - hosts:"
+              echo "    - $DOMAIN"
+              echo "    secretName: ${SITE_NAME}-tls"
+            ) > "${SITE_NAME}-k8s.yaml"
+
+            # Το στέλνει στον server και κάνει restart
+            kubectl apply -f "${SITE_NAME}-k8s.yaml" --insecure-skip-tls-verify
+            kubectl rollout restart deployment $SITE_NAME --insecure-skip-tls-verify
+          done
