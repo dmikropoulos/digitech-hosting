@@ -62,3 +62,8 @@ Deploying a new client site requires **zero server configuration**:
 
 The K3s cluster and deployed containers are managed visually via **Portainer**. 
 Access the Portainer dashboard at: `https://portainer-YOUR.SERVER.IP.nip.io`
+
+
+You can watch these 2 public live servers at :
+🟢demo-menu:https://demo-menu-130.61.72.72.nip.io/
+🟢pelatis-2:https://pelatis-2-130.61.72.72.nip.io/
